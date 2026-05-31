@@ -33,13 +33,22 @@ def get_animal_model():
 
     if animal_model is None:
         import tensorflow as tf
+        import os
 
-        print("Loading animal model...")
-        animal_model = tf.keras.models.load_model(
-            ANIMAL_MODEL_PATH,
-            compile=False
-        )
-        print("Animal model loaded")
+        print("Current working directory:", os.getcwd())
+        print("Checking model path:", ANIMAL_MODEL_PATH)
+        print("Model exists:", os.path.exists(ANIMAL_MODEL_PATH))
+
+        try:
+            print("Loading animal model...")
+            animal_model = tf.keras.models.load_model(
+                ANIMAL_MODEL_PATH,
+                compile=False
+            )
+            print("Animal model loaded")
+        except Exception as e:
+            print("MODEL LOADING ERROR:", repr(e))
+            raise
 
     return animal_model
 
@@ -92,23 +101,34 @@ def health():
 
 @app.post("/predict/animal")
 async def predict_animal(file: UploadFile = File(...)):
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Файл должен быть изображением")
-
-    image_bytes = await file.read()
-
     try:
-        image = Image.open(io.BytesIO(image_bytes))
-    except Exception:
-        raise HTTPException(status_code=400, detail="Не удалось прочитать изображение")
+        if not file.content_type or not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Файл должен быть изображением")
 
-    image_array = preprocess_animal_image(image)
+        image_bytes = await file.read()
 
-    model = get_animal_model()
-    result = make_prediction(model, image_array, ANIMAL_CLASSES)
+        try:
+            image = Image.open(io.BytesIO(image_bytes))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Не удалось прочитать изображение")
 
-    return {
-        "task": "animal",
-        "filename": file.filename,
-        **result
-    }
+        image_array = preprocess_animal_image(image)
+
+        model = get_animal_model()
+        result = make_prediction(model, image_array, ANIMAL_CLASSES)
+
+        return {
+            "task": "animal",
+            "filename": file.filename,
+            **result
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        print("PREDICTION ERROR:", repr(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при предсказании: {repr(e)}"
+        )
