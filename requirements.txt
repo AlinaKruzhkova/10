@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+Pillow
+tensorflow
+numpy
+streamlit
+requests
+Pillow
+matplotlib
+numpy
+streamlit-drawable-canvas
