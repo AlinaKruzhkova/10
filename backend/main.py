@@ -27,28 +27,33 @@ ANIMAL_IMAGE_SIZE = (224, 224)
 
 animal_model = None
 
+def load_model_compatible(model_path: str):
+    import tensorflow as tf
+
+    original_from_config = tf.keras.layers.Dense.from_config
+
+    @classmethod
+    def patched_dense_from_config(cls, config):
+        config = dict(config)
+        config.pop("quantization_config", None)
+        return original_from_config(config)
+
+    tf.keras.layers.Dense.from_config = patched_dense_from_config
+
+    return tf.keras.models.load_model(
+        model_path,
+        compile=False
+    )
 
 def get_animal_model():
     global animal_model
 
     if animal_model is None:
-        import tensorflow as tf
-        import os
+        print("Loading animal model...")
 
-        print("Current working directory:", os.getcwd())
-        print("Checking model path:", ANIMAL_MODEL_PATH)
-        print("Model exists:", os.path.exists(ANIMAL_MODEL_PATH))
+        animal_model = load_model_compatible(ANIMAL_MODEL_PATH)
 
-        try:
-            print("Loading animal model...")
-            animal_model = tf.keras.models.load_model(
-                ANIMAL_MODEL_PATH,
-                compile=False
-            )
-            print("Animal model loaded")
-        except Exception as e:
-            print("MODEL LOADING ERROR:", repr(e))
-            raise
+        print("Animal model loaded")
 
     return animal_model
 
