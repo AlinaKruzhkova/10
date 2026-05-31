@@ -2,7 +2,6 @@ import io
 import numpy as np
 from PIL import Image
 
-import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -23,14 +22,26 @@ app.add_middleware(
 
 ANIMAL_MODEL_PATH = "models/best_model_final.keras"
 
-animal_model = tf.keras.models.load_model(
-    ANIMAL_MODEL_PATH,
-    compile=False
-)
-
 ANIMAL_CLASSES = ["cat", "rabbit", "snake"]
-
 ANIMAL_IMAGE_SIZE = (224, 224)
+
+animal_model = None
+
+
+def get_animal_model():
+    global animal_model
+
+    if animal_model is None:
+        import tensorflow as tf
+
+        print("Loading animal model...")
+        animal_model = tf.keras.models.load_model(
+            ANIMAL_MODEL_PATH,
+            compile=False
+        )
+        print("Animal model loaded")
+
+    return animal_model
 
 
 def preprocess_animal_image(image: Image.Image) -> np.ndarray:
@@ -44,6 +55,8 @@ def preprocess_animal_image(image: Image.Image) -> np.ndarray:
 
 
 def make_prediction(model, image_array: np.ndarray, class_names: list[str]) -> dict:
+    import tensorflow as tf
+
     preds = model.predict(image_array, verbose=0)[0]
 
     if not np.isclose(np.sum(preds), 1.0, atol=1e-2):
@@ -71,7 +84,10 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "model_loaded": animal_model is not None
+    }
 
 
 @app.post("/predict/animal")
@@ -87,7 +103,9 @@ async def predict_animal(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Не удалось прочитать изображение")
 
     image_array = preprocess_animal_image(image)
-    result = make_prediction(animal_model, image_array, ANIMAL_CLASSES)
+
+    model = get_animal_model()
+    result = make_prediction(model, image_array, ANIMAL_CLASSES)
 
     return {
         "task": "animal",
