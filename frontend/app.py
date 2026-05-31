@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # Базовый URL API
-API_BASE_URL = "https://image-classification-project-nl0r.onrender.com/predict"
+API_BASE_URL = "https://one0-rfmc.onrender.com"
 ANIMAL_API_URL = f"{API_BASE_URL}/predict/animal"
 
 # Пути к изображениям с метриками
