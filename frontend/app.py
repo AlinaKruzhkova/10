@@ -19,8 +19,8 @@ ANIMAL_API_URL = f"{API_BASE_URL}/predict/animal"
 
 # Пути к изображениям с метриками
 BASE_DIR = Path(__file__).parent
-CONFUSION_PATH = BASE_DIR / "assets" / "confusion_matrices.png"
-METRICS_PATH = BASE_DIR / "assets" / "metrics_comparison.png"
+CONFUSION_PATH = BASE_DIR / "assets" / "confusion_matrices (1).png"
+METRICS_PATH = BASE_DIR / "assets" / "metrics_comparison_grouped.png"
 
 
 def prepare_image_bytes(image: Image.Image) -> bytes:
